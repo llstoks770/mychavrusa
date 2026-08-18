@@ -1,0 +1,159 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: system-ui;
+  background: #fbfaf6;
+  color: #17231d;
+}
+.w {
+  max-width: 1050px;
+  margin: auto;
+  padding: 20px;
+}
+.nav,
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.brand {
+  font: 700 27px Georgia;
+}
+.brand b {
+  color: #1e5b42;
+}
+.btn {
+  border: 1px solid #d9dfda;
+  background: #fff;
+  border-radius: 10px;
+  padding: 11px 15px;
+  cursor: pointer;
+  font-weight: 650;
+}
+.primary {
+  background: #1e5b42;
+  color: #fff;
+}
+.hero {
+  text-align: center;
+  padding: 70px 0;
+}
+.hero h1,
+.card h1 {
+  font: 700 48px Georgia;
+}
+.muted {
+  color: #68736d;
+}
+.choices,
+.grid,
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.choice,
+.card,
+.item,
+.stat {
+  background: #fff;
+  border: 1px solid #e2e6e2;
+  border-radius: 18px;
+  padding: 22px;
+}
+.choice {
+  text-align: left;
+  cursor: pointer;
+}
+.card {
+  max-width: 720px;
+  margin: 35px auto;
+}
+.field {
+  margin: 13px 0;
+}
+.field label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d6ddd7;
+  border-radius: 10px;
+  background: white;
+}
+.field textarea {
+  min-height: 90px;
+}
+.msg {
+  margin: 12px 0;
+  padding: 11px;
+  border-radius: 9px;
+  background: #f0f5f1;
+}
+.err {
+  background: #fff0ee;
+  color: #943c32;
+}
+.ok {
+  background: #eaf5ee;
+  color: #1e5b42;
+}
+.dash {
+  padding: 25px 0;
+}
+.stats {
+  grid-template-columns: repeat(4, 1fr);
+  margin: 20px 0;
+}
+.stat b {
+  display: block;
+  font-size: 26px;
+}
+.list {
+  display: grid;
+  gap: 10px;
+}
+.badge {
+  background: #edf2ee;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.privacy {
+  font-size: 13px;
+  color: #68736d;
+}
+.internal-detail {
+  margin-top: 10px;
+  padding: 10px;
+  border-left: 3px solid #1e5b42;
+  background: #f7faf8;
+  font-size: 14px;
+}
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+@media (max-width: 700px) {
+  .choices,
+  .grid,
+  .stats {
+    grid-template-columns: 1fr;
+  }
+  .hero h1 {
+    font-size: 40px;
+  }
+  .row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
