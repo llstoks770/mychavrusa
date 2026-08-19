@@ -68,10 +68,39 @@ body {
   text-align: left;
   cursor: pointer;
 }
+.how { padding: 35px 0 70px; text-align:center; }
+.steps { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:24px; }
+.steps > div { background:#fff; border:1px solid #e2e6e2; border-radius:18px; padding:22px; }
+.steps b { display:inline-grid; place-items:center; width:34px; height:34px; border-radius:50%; background:#1e5b42; color:#fff; }
 .card {
   max-width: 720px;
   margin: 35px auto;
 }
+.card.wide {
+  max-width: 920px;
+}
+.card h2 {
+  margin-top: 30px;
+  padding-top: 18px;
+  border-top: 1px solid #edf0ed;
+}
+.checkgrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.check {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #dfe5e0;
+  border-radius: 10px;
+  font-weight: 600 !important;
+}
+.check input { width: auto !important; }
+.profile-preview { border: 2px solid #cddbd2; }
+.verify { display:inline-block; margin: 4px 8px 4px 0; color:#496157; font-size:13px; }
 .field {
   margin: 13px 0;
 }
@@ -117,6 +146,8 @@ body {
   display: block;
   font-size: 26px;
 }
+button.stat { text-align:left; color:inherit; cursor:pointer; font:inherit; }
+.urgent { background:#fff3cf; color:#745700; }
 .list {
   display: grid;
   gap: 10px;
@@ -146,7 +177,9 @@ body {
 @media (max-width: 700px) {
   .choices,
   .grid,
-  .stats {
+  .stats,
+  .checkgrid,
+  .steps {
     grid-template-columns: 1fr;
   }
   .hero h1 {

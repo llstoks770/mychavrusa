@@ -21,6 +21,26 @@ const s = createClient(
       .replaceAll("_", " ")
       .replace(/\b\w/g, (c) => c.toUpperCase()),
   V = (id) => document.getElementById(id).value.trim();
+const checked = (name) =>
+  [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(
+    (x) => x.value,
+  );
+const options = (name, values, selected = []) =>
+  values
+    .map(
+      ([value, label]) =>
+        `<label class="check"><input type=checkbox name="${name}" value="${value}" ${selected.includes(value) ? "checked" : ""}> ${label}</label>`,
+    )
+    .join("");
+const days = [
+  [0, "Sunday"], [1, "Monday"], [2, "Tuesday"], [3, "Wednesday"],
+  [4, "Thursday"], [5, "Friday"], [6, "Motzaei Shabbos"],
+];
+const subjects = [
+  ["gemara", "Gemara"], ["chassidus", "Chassidus"], ["halacha", "Halacha"],
+  ["mishnayos", "Mishnayos"], ["bar_mitzvah", "Bar Mitzvah Preparation"],
+  ["kriah", "Kriah"], ["krias_hatorah", "Krias HaTorah"], ["other", "Other"],
+];
 function nav(log = false, back = false) {
   return `<div class=w><div class=nav><div class=brand>My<b>Chavrusa</b></div><div>${back ? "<button class=btn id=back>← Back</button>" : ""}<button class=btn id=acct>${log ? "Sign out" : "Sign in"}</button></div></div></div>`;
 }
@@ -39,7 +59,7 @@ async function home() {
   } = await s.auth.getSession();
   a.innerHTML =
     nav(!!session) +
-    `<div class=w><section class=hero><div class=muted>THE RIGHT LEARNING CONNECTION</div><h1>A Chavrusa can make all the difference.</h1><p>Connecting families with the right person to learn with their son.</p>${session ? '<p><button class="btn primary" id=dash>Open dashboard</button></p>' : ""}<div class=choices><div class=choice id=p><h2>I’m Looking for a Chavrusa</h2><p>Find someone to learn with your son — in person or online.</p></div><div class=choice id=c><h2>Become a Chavrusa</h2><p>Offer your time to learn with a Bochur.</p></div></div><p class=privacy>Privacy-first matching • Contact details are never public</p></section></div>`;
+    `<div class=w><section class=hero><div class=muted>THE RIGHT LEARNING CONNECTION</div><h1>A Chavrusa can make all the difference.</h1><p>Connecting families with the right person to learn with their son.</p>${session ? '<p><button class="btn primary" id=dash>Open dashboard</button></p>' : ""}<div class=choices><div class=choice id=p><h2>I’m Looking for a Chavrusa</h2><p>Find someone to learn with your son — in person or online.</p></div><div class=choice id=c><h2>I’m Available to Learn</h2><p>Create a private Chavrusa profile and offer your time to learn with a Bochur.</p></div></div><p class=privacy>Privacy-first matching • Contact details are never public</p></section><section class=how><div class=muted>HOW IT WORKS</div><h2>Thoughtful matching. Mutual consent. Private by design.</h2><div class=steps><div><b>1</b><h3>Create a request or profile</h3><p>No login is required until the information is complete.</p></div><div><b>2</b><h3>Review matches safely</h3><p>Profiles stay anonymous and every Chavrusa is verified by MyChavrusa.</p></div><div><b>3</b><h3>Connect only when both agree</h3><p>Contact details are shared only after mutual approval.</p></div></div></section></div>`;
   wire(!!session);
   if (session) dash.onclick = route;
   p.onclick = session ? route : parentForm;
@@ -49,18 +69,24 @@ async function parentForm(draft = {}) {
   let {
     data: { session },
   } = await s.auth.getSession();
-  a.innerHTML =
-    nav(!!session, true) +
-    `<div class=card><div class=muted>STEP 1 OF 3</div><h1>Tell us what your son needs</h1><p class=muted>No account is needed yet. First, tell us what kind of Chavrusa would be helpful.</p><div id=m></div><h3>About your son</h3><div class=grid><div class=field><label>First name</label><input id=boy></div><div class=field><label>Age</label><input id=age type=number></div><div class=field><label>Current Yeshiva / Cheder</label><input id=yeshiva></div><div class=field><label>Location</label><input id=loc></div><div class=field><label>Preferred Language</label><select id=lang><option>English</option><option>Yiddish</option><option>Hebrew</option><option>No preference</option></select></div><div class=field><label>Learning format</label><select id=mode><option value=either>Either</option><option value=in_person>In person</option><option value=online>Online</option></select></div></div><div class=field><label>What would you like help with?</label><select id=purpose><option>Gemara - Girsa</option><option>Gemara - Iyun</option><option>Halacha</option><option>Mishnayos</option><option>Bar Mitzvah</option><option>Reading</option><option>Krias HaTorah</option><option>General Chavrusa</option><option>Other</option></select></div><div class=field><label>Anything else you'd like us to know? <span class=muted>(optional)</span></label><textarea id=notes></textarea></div><div class=msg><b>Privacy:</b> your son's full identity is never shown to Chavrusas. They receive only the limited information needed to decide whether the learning arrangement may be a fit.</div><button class="btn primary" id=go>Continue →</button></div>`;
+  a.innerHTML = nav(!!session, true) + `<div class="card wide"><div class=muted>PARENT REQUEST • NO LOGIN REQUIRED YET</div><h1>Find the right Chavrusa</h1><p class=muted>Complete the request first. You will create an account only at the end.</p><div id=m></div>
+  <h2>1. About the Bochur</h2><div class=grid><div class=field><label>Bochur’s First Name</label><input id=boy></div><div class=field><label>Bochur’s Last Name</label><input id=boyLast></div><div class=field><label>Age</label><input id=age type=number min=5 max=30></div><div class=field><label>Current Yeshiva</label><input id=yeshiva></div><div class=field><label>Shiur / Year</label><input id=shiur></div><div class=field><label>Location</label><input id=loc></div><div class=field><label>Preferred Language</label><select id=lang><option>English</option><option>Yiddish</option><option>Hebrew</option><option>No preference</option></select></div></div><p class=privacy>🔒 His name remains private until you choose to connect with a Chavrusa.</p>
+  <h2>2. Learning Needs</h2><div class="field"><label>What are you looking for?</label><div class=checkgrid>${options("subjects", subjects, draft.subjects)}</div></div><div class=field id=gemaraBox><label>For Gemara</label><div class=checkgrid>${options("gemara", [["girsa","Girsa"],["iyun","Iyun"],["both","Both"],["skills","Building Gemara Skills"]], draft.gemaraStyles)}</div></div><div class=field><label>Other subject <span class=muted>(if applicable)</span></label><input id=otherSubject></div>
+  <h2>3. Schedule</h2><div class=grid><div class=field><label>Online / In Person</label><select id=mode><option value=either>Either</option><option value=in_person>In person</option><option value=online>Online</option></select></div><div class=field><label>Frequency</label><input id=frequency placeholder="e.g. Twice a week"></div><div class=field><label>Session length</label><input id=duration placeholder="e.g. 45 minutes"></div><div class=field><label>Times / Sedarim</label><input id=timePeriod placeholder="e.g. Evenings, after first Seder"></div></div><div class=field><label>Available days</label><div class=checkgrid>${options("days", days.map(([v,l])=>[String(v),l]), (draft.days||[]).map(String))}</div></div>
+  <h2>4. Budget & Timing</h2><div class=grid><div class=field><label>Minimum budget <span class=muted>(optional)</span></label><input id=budgetMin type=number min=0 placeholder="$"></div><div class=field><label>Maximum budget <span class=muted>(optional)</span></label><input id=budgetMax type=number min=0 placeholder="$"></div><div class=field><label>Budget preference</label><select id=budgetChoice><option value=flexible>Flexible</option><option value=range>Use the range above</option><option value=discuss>Discuss with Chavrusa</option></select></div><div class=field><label>How soon do you need someone?</label><select id=urgency><option value=urgent>Urgent — As soon as possible</option><option value=within_week>Within a week</option><option value=within_few_weeks>Within a few weeks</option><option value=exploring>Just exploring</option></select></div></div><p class=privacy>Urgency is internal and visible only to MyChavrusa administrators.</p>
+  <div class=field><label>Anything else you'd like us to know? <span class=muted>(optional)</span></label><textarea id=notes></textarea></div><div class=msg><b>Privacy:</b> Chavrusas see only limited matching information. Names and contact details stay private until mutual approval.</div><button class="btn primary" id=go>Review Request →</button></div>`;
   wire(!!session, session ? route : home);
   const parentFields = {
-    boy: draft.boy,
+    boy: draft.boy, boyLast: draft.boyLast,
     age: draft.age,
-    yeshiva: draft.yeshiva,
+    yeshiva: draft.yeshiva, shiur: draft.shiur,
     loc: draft.loc,
     lang: draft.lang,
     mode: draft.mode,
-    purpose: draft.purpose,
+    otherSubject: draft.otherSubject, frequency: draft.frequency,
+    duration: draft.duration, timePeriod: draft.timePeriod,
+    budgetMin: draft.budgetMin, budgetMax: draft.budgetMax,
+    budgetChoice: draft.budgetChoice, urgency: draft.urgency,
     notes: draft.notes,
   };
   Object.entries(parentFields).forEach(([id, value]) => {
@@ -72,14 +98,16 @@ async function parentForm(draft = {}) {
       return (m.innerHTML =
         '<div class="msg err">Please enter your son’s first name.</div>');
     parentReview({
-      kind: "parent",
-      boy: V("boy"),
+      kind: "parent", boy: V("boy"), boyLast: V("boyLast"),
       age: +V("age") || null,
-      yeshiva: V("yeshiva"),
+      yeshiva: V("yeshiva"), shiur: V("shiur"),
       loc: V("loc"),
       lang: V("lang"),
       mode: V("mode"),
-      purpose: V("purpose"),
+      subjects: checked("subjects"), gemaraStyles: checked("gemara"), otherSubject: V("otherSubject"),
+      days: checked("days").map(Number), timePeriod: V("timePeriod"), frequency: V("frequency"), duration: V("duration"),
+      budgetMin: +V("budgetMin") || null, budgetMax: +V("budgetMax") || null,
+      budgetChoice: V("budgetChoice"), urgency: V("urgency"),
       notes: V("notes"),
     });
   };
@@ -87,7 +115,7 @@ async function parentForm(draft = {}) {
 function parentReview(x) {
   a.innerHTML =
     nav(false, true) +
-    `<div class=card><div class=muted>STEP 2 OF 3</div><h1>Review your request</h1><p class=muted>Make sure this looks right before submitting.</p><div class=item><h3 style="margin-top:0">${E(x.boy)}${x.age ? " • Age " + E(x.age) : ""}</h3><p><b>Yeshiva / Cheder:</b> ${E(x.yeshiva || "Not specified")}<br><b>Location:</b> ${E(x.loc || "Not specified")}<br><b>Preferred Language:</b> ${E(x.lang)}<br><b>Format:</b> ${E(F(x.mode))}<br><b>Learning:</b> ${E(x.purpose)}</p>${x.notes ? `<p><b>Anything else:</b> ${E(x.notes)}</p>` : ""}</div><p class=privacy>Only limited request information is used for matching. Your contact details are not shown publicly.</p><button class=btn id=edit>Edit</button> <button class="btn primary" id=submit>Submit Request →</button></div>`;
+    `<div class="card wide"><div class=muted>REVIEW</div><h1>Review your request</h1><div class=item><h3 style="margin-top:0">${E(x.boy)} ${E(x.boyLast)}${x.age ? " • Age " + E(x.age) : ""}</h3><p><b>Yeshiva / Shiur:</b> ${E(x.yeshiva || "Not specified")} ${x.shiur ? "• "+E(x.shiur):""}<br><b>Location / Language:</b> ${E(x.loc || "Not specified")} • ${E(x.lang)}<br><b>Learning:</b> ${E(x.subjects.map(F).join(", ") || "Not specified")}${x.gemaraStyles.length ? " — "+E(x.gemaraStyles.map(F).join(", ")):""}<br><b>Schedule:</b> ${E(x.days.map(d=>days.find(([v])=>v===d)?.[1]).filter(Boolean).join(", ") || "Days flexible")} • ${E(x.timePeriod || "Times flexible")} • ${E(x.frequency || "Frequency flexible")}<br><b>Format:</b> ${E(F(x.mode))}<br><b>Budget:</b> ${x.budgetChoice==="range" ? E(`$${x.budgetMin||0}–$${x.budgetMax||0}`) : E(F(x.budgetChoice))}<br><b>Timing:</b> ${E(F(x.urgency))} <span class=privacy>(admin only)</span></p>${x.notes ? `<p><b>Notes:</b> ${E(x.notes)}</p>` : ""}</div><p class=privacy>The Bochur’s identity and urgency are not shown on public match cards.</p><button class=btn id=edit>Edit</button> <button class="btn primary" id=submit>Continue to Account →</button></div>`;
   wire(false, () => parentForm(x));
   edit.onclick = () => parentForm(x);
   submit.onclick = () => continueDraft(x, "parent");
@@ -97,9 +125,12 @@ async function chavForm(draft = {}) {
     data: { session },
   } = await s.auth.getSession();
   if (session) return route();
-  a.innerHTML =
-    nav(false, true) +
-    `<div class=card><div class=muted>STEP 1 OF 3</div><h1>Become a Chavrusa</h1><p class=muted>Tell us about the learning you can offer. Your account and contact details come only at the end.</p><div id=m></div><div class=grid><div class=field><label>Profile type</label><select id=type><option value=yungerman>Yungerman</option><option value=eltere_bochur>Eltere Bochur</option><option value=770_bochur>770 Bochur</option><option value=melamed_professional>Melamed / Professional</option><option value=other>Other</option></select></div><div class=field><label>Age</label><input id=age type=number></div><div class=field><label>Location</label><input id=loc></div><div class=field><label>Yeshiva / Kollel / Position</label><input id=position></div><div class=field><label>Learning format</label><select id=mode><option value=either>Either</option><option value=in_person>In person</option><option value=online>Online</option></select></div><div class=field><label>Approximate rate</label><input id=rate type=number placeholder="$ per hour — leave blank if flexible"></div><div class=field><label>Languages</label><input id=langs placeholder="English, Yiddish, Hebrew"></div></div><div class=field><label>What can you learn?</label><div class=grid id=subs>${["Gemara - Girsa", "Gemara - Iyun", "Halacha", "Mishnayos", "Bar Mitzvah", "Reading", "Krias HaTorah", "General Chavrusa", "Other"].map((v) => `<label><input type=checkbox value="${v}"> ${v}</label>`).join("")}</div></div><div class=field><label>A few words about your learning / experience</label><textarea id=bio></textarea></div><div class=field><label>Profile privacy</label><select id=visibility><option value=anonymous>Recommended — anonymous match card</option><option value=first_name_visible>Show first name</option><option value=private>Private — admin suggestions only</option></select><p class=privacy><b>Recommended:</b> parents see a useful profile card without your identity. <b>Private:</b> your profile is handled through MyChavrusa and is less likely to receive direct matches.</p></div><h3>Reference for verification</h3><p class=privacy>This information is internal. Parents will never see the reference's name or contact details.</p><div class=grid><div class=field><label>Reference name</label><input id=refName></div><div class=field><label>Relationship</label><input id=refRelationship placeholder="Rosh Yeshiva, employer, etc."></div><div class=field><label>Reference phone</label><input id=refPhone type=tel></div><div class=field><label>Reference email <span class=muted>(optional)</span></label><input id=refEmail type=email></div></div><button class="btn primary" id=go>Preview My Profile →</button></div>`;
+  a.innerHTML = nav(false, true) + `<div class="card wide"><div class=muted>CHAVRUSA PROFILE • NO LOGIN REQUIRED YET</div><h1>I’m Available to Learn</h1><p class=muted>Build your complete profile first. Your contact and verification details remain private.</p><div id=m></div>
+  <h2>1. About You</h2><div class=grid><div class=field><label>Profile type</label><select id=type><option value=yungerman>Yungerman</option><option value=eltere_bochur>Eltere Bochur</option><option value=770_bochur>770 Bochur</option><option value=melamed_professional>Melamed / Professional Tutor</option><option value=other>Other</option></select></div><div class=field><label>Age</label><input id=age type=number min=17 max=100></div><div class=field><label>Location</label><input id=loc></div><div class=field><label>Yeshiva / Kollel / Position</label><input id=position></div><div class=field><label>Languages</label><input id=langs placeholder="English, Yiddish, Hebrew"></div><div class=field><label>Age groups you are comfortable with</label><input id=ageGroups placeholder="e.g. Bar Mitzvah, Mesivta, Zal"></div></div><div class=field><label>Learning and one-on-one experience</label><textarea id=bio placeholder="A few useful sentences for parents"></textarea></div>
+  <h2>2. Learning</h2><div class=field><label>What would you be comfortable learning?</label><div class=checkgrid>${options("subjects", subjects, draft.subjects)}</div></div><div class=field><label>For Gemara</label><div class=checkgrid>${options("gemara", [["girsa","Girsa"],["iyun","Iyun"],["both","Both"],["skills","Building Gemara Skills"]], draft.gemaraStyles)}</div></div><div class=field><label>Other subject <span class=muted>(if applicable)</span></label><input id=otherSubject></div>
+  <h2>3. Availability & Rate</h2><div class=grid><div class=field><label>Learning format</label><select id=mode><option value=either>Either</option><option value=in_person>In person</option><option value=online>Online</option></select></div><div class=field><label>In-person area <span class=muted>(optional)</span></label><input id=inPersonArea></div><div class=field><label>Frequency</label><input id=frequency placeholder="e.g. Twice a week"></div><div class=field><label>Times / Sedarim</label><input id=timePeriod placeholder="e.g. Evenings"></div><div class=field><label>Rate type</label><select id=rateType><option value=flexible>Flexible</option><option value=hourly>Hourly</option><option value=per_seder>Per Seder</option><option value=monthly>Monthly</option></select></div><div class=field><label>Rate amount <span class=muted>(optional)</span></label><input id=rate type=number min=0 placeholder="$"></div></div><div class=field><label>Available days</label><div class=checkgrid>${options("days", days.map(([v,l])=>[String(v),l]), (draft.days||[]).map(String))}</div></div>
+  <h2>4. Privacy & Live Preview</h2><div class=field><label>Profile privacy</label><select id=visibility><option value=anonymous>Anonymous — Recommended</option><option value=private>Private — Admin suggestions only</option><option value=first_name_visible>First Name Visible</option></select><p class=privacy>Full name, phone and email are never displayed on the match card.</p></div>
+  <h2>5. Verification</h2><p class=privacy>MyChavrusa verifies profiles for safety. The reference is private and never appears on your profile.</p><div class=grid><div class=field><label>Reference Full Name</label><input id=refName></div><div class=field><label>Position / Title</label><input id=refTitle></div><div class=field><label>Yeshiva / Kollel / Organization</label><input id=refOrg></div><div class=field><label>Relationship to You</label><input id=refRelationship></div><div class=field><label>Phone Number</label><input id=refPhone type=tel></div><div class=field><label>Email <span class=muted>(optional)</span></label><input id=refEmail type=email></div></div><button class="btn primary" id=go>Open Live Preview →</button></div>`;
   wire(false, home);
   const chavFields = {
     type: draft.type,
@@ -107,11 +138,13 @@ async function chavForm(draft = {}) {
     loc: draft.loc,
     position: draft.position,
     mode: draft.mode,
-    rate: draft.rate,
+    rate: draft.rate, rateType: draft.rateType, inPersonArea: draft.inPersonArea,
+    frequency: draft.frequency, timePeriod: draft.timePeriod,
     langs: draft.langs?.join(", "),
-    bio: draft.bio,
+    bio: draft.bio, ageGroups: draft.ageGroups, otherSubject: draft.otherSubject,
     visibility: draft.visibility,
     refName: draft.referenceName,
+    refTitle: draft.referenceTitle, refOrg: draft.referenceOrganization,
     refRelationship: draft.referenceRelationship,
     refPhone: draft.referencePhone,
     refEmail: draft.referenceEmail,
@@ -120,16 +153,8 @@ async function chavForm(draft = {}) {
     if (value !== undefined && value !== null)
       document.getElementById(id).value = value;
   });
-  (draft.subjects || []).forEach((subject) => {
-    const checkbox = [...document.querySelectorAll("#subs input")].find(
-      (item) => item.value === subject,
-    );
-    if (checkbox) checkbox.checked = true;
-  });
   go.onclick = () => {
-    let subjects = [...document.querySelectorAll("#subs input:checked")].map(
-      (i) => i.value,
-    );
+    let chosenSubjects = checked("subjects");
     if (!V("refName") || !V("refPhone"))
       return (m.innerHTML =
         '<div class="msg err">Please provide a reference name and phone number for verification.</div>');
@@ -140,16 +165,17 @@ async function chavForm(draft = {}) {
       loc: V("loc"),
       position: V("position"),
       mode: V("mode"),
-      rate: +V("rate") || null,
+      rate: +V("rate") || null, rateType: V("rateType"), inPersonArea: V("inPersonArea"),
+      days: checked("days").map(Number), timePeriod: V("timePeriod"), frequency: V("frequency"),
       langs: V("langs")
         .split(",")
         .map((x) => x.trim())
         .filter(Boolean),
-      subjects,
-      bio: V("bio"),
+      subjects: chosenSubjects, gemaraStyles: checked("gemara"), otherSubject: V("otherSubject"),
+      bio: V("bio"), ageGroups: V("ageGroups"),
       visibility: V("visibility"),
       referenceName: V("refName"),
-      referenceRelationship: V("refRelationship"),
+      referenceTitle: V("refTitle"), referenceOrganization: V("refOrg"), referenceRelationship: V("refRelationship"),
       referencePhone: V("refPhone"),
       referenceEmail: V("refEmail"),
     });
@@ -161,10 +187,10 @@ function chavPreview(x) {
       ? "Private Profile"
       : x.visibility === "first_name_visible"
         ? "Your first name"
-        : "C. •••••";
+        : F(x.type);
   a.innerHTML =
     nav(false, true) +
-    `<div class=card><div class=muted>STEP 2 OF 3</div><h1>This is how your profile can look</h1><p class=muted>${x.visibility === "anonymous" ? "This is the recommended privacy option. Your identity stays hidden while parents can still understand whether you may be a fit." : x.visibility === "private" ? "This profile will not appear in the normal parent match list. MyChavrusa can use it for private suggestions." : "Your first name will be visible, but your contact details will still remain private."}</p><div class=item><div class=row><div><h3 style="margin:0 0 6px">${E(dn)}</h3><div class=muted>${E(F(x.type))} • ${E(x.loc || "Location not listed")} • ${E(F(x.mode))}</div></div><span class=badge>${x.rate ? "Approx. $" + E(x.rate) + "/hr" : "Rate flexible"}</span></div>${x.bio ? `<p>${E(x.bio)}</p>` : ""}${x.langs.length ? `<p class=privacy><b>Languages:</b> ${x.langs.map(E).join(", ")}</p>` : ""}${x.subjects.length ? `<p class=privacy><b>Learning:</b> ${x.subjects.map(E).join(", ")}</p>` : ""}</div><p class=privacy>Your phone number, email address and full name are not displayed on this card.</p><button class=btn id=edit>Edit Profile</button> <button class="btn primary" id=publish>Publish Profile →</button></div>`;
+    `<div class="card wide"><div class=muted>LIVE PREVIEW</div><h1>Exactly what a parent will see</h1><p class=muted>${x.visibility === "anonymous" ? "Recommended: your identity stays hidden." : x.visibility === "private" ? "This profile is visible only to Admin for assisted suggestions." : "Only your first name will be visible after account creation."}</p><div class="item profile-preview"><div class=row><div><h3 style="margin:0 0 6px">${E(dn)} • ${E(x.loc || "Location not listed")}</h3><div class=muted>${E(x.subjects.map(F).join(" • ") || "Learning subjects not listed")}</div></div><span class=badge>${x.rate ? E(F(x.rateType))+" • $"+E(x.rate) : "Rate flexible"}</span></div>${x.bio ? `<p>${E(x.bio)}</p>` : ""}<p class=privacy>${E(x.timePeriod || "Times flexible")} • ${E(F(x.mode))}${x.ageGroups ? " • Age groups: "+E(x.ageGroups):""}</p>${x.langs.length ? `<p class=privacy><b>Languages:</b> ${x.langs.map(E).join(", ")}</p>` : ""}<p><span class=verify>○ Identity Verification Pending</span> <span class=verify>○ Reference Check Pending</span></p></div><p class=privacy>Full name, phone, email and reference information are not displayed.</p><button class=btn id=edit>Edit Profile</button> <button class="btn primary" id=publish>Continue to Account →</button></div>`;
   wire(false, () => chavForm(x));
   edit.onclick = () => chavForm(x);
   publish.onclick = () => continueDraft(x, "chavrusa");
@@ -207,8 +233,10 @@ function accountGate(role) {
         },
       },
     });
-    if (error)
-      return (m.innerHTML = `<div class="msg err">${E(error.message)}</div>`);
+    if (error) {
+      const rateLimited = /rate limit/i.test(error.message || "");
+      return (m.innerHTML = `<div class="msg err">${rateLimited ? "Verification emails are temporarily limited. Your completed form is safely saved on this device. Wait and press this same button again later — do not refill the form." : E(error.message)}</div>`);
+    }
     if (data.session) {
       try {
         await finishPending(data.user.id);
@@ -216,43 +244,25 @@ function accountGate(role) {
       } catch (e) {
         m.innerHTML = `<div class="msg err">${E(e.message)}</div>`;
       }
-    } else
+    } else {
       m.innerHTML =
-        '<div class="msg ok">Account created. Please confirm your email, then sign in. Your completed information is saved on this device and will be submitted after sign-in.</div>';
+        '<div class="msg ok">Account created. Please confirm your email, then sign in. Your completed information is saved on this device and will be submitted after sign-in.</div><button class="btn" id=resend>Resend verification email</button>';
+      resend.onclick = async () => {
+        resend.disabled = true;
+        const { error } = await s.auth.resend({ type: "signup", email: V("email"), options: { emailRedirectTo: location.origin } });
+        m.innerHTML = error ? `<div class="msg err">${E(error.message)}</div>` : '<div class="msg ok">Verification email sent again.</div>';
+      };
+    }
   };
 }
 async function finishPending(uid) {
   let x = JSON.parse(localStorage.getItem("mc_pending") || "null");
   if (!x) return;
   if (x.kind === "parent") {
-    let { error } = await s.rpc("submit_parent_request", {
-      p_boy: x.boy,
-      p_age: x.age,
-      p_yeshiva: x.yeshiva || null,
-      p_location: x.loc || null,
-      p_language: x.lang || null,
-      p_learning_mode: x.mode,
-      p_purpose: x.purpose,
-      p_notes: x.notes || null,
-    });
+    let { error } = await s.rpc("submit_parent_request_v2", { p_payload: x });
     if (error) throw error;
   } else {
-    let { error } = await s.rpc("submit_chavrusa_profile_v2", {
-      p_type: x.type,
-      p_age: x.age,
-      p_location: x.loc || null,
-      p_position: x.position || null,
-      p_learning_mode: x.mode,
-      p_rate: x.rate,
-      p_languages: x.langs || [],
-      p_bio: x.bio || null,
-      p_visibility: x.visibility,
-      p_subjects: x.subjects || [],
-      p_reference_name: x.referenceName,
-      p_reference_relationship: x.referenceRelationship || null,
-      p_reference_phone: x.referencePhone,
-      p_reference_email: x.referenceEmail || null,
-    });
+    let { error } = await s.rpc("submit_chavrusa_profile_v3", { p_payload: x });
     if (error) throw error;
   }
   localStorage.removeItem("mc_pending");
@@ -573,13 +583,13 @@ async function admin(p) {
     active = (rs || []).filter((x) => x.status !== "closed");
   a.innerHTML =
     nav(true) +
-    `<div class="w dash"><div class=row><div><div class=muted>ADMIN DASHBOARD</div><h1>MyChavrusa Control Center</h1></div><span class=badge>Internal only</span></div><div class=stats><div class=stat>Chavrusas<b>${cps?.length || 0}</b></div><div class=stat>Active Requests<b>${active.length}</b></div><div class=stat>Connections<b>${cs?.length || 0}</b></div><div class=stat>Needs Review<b>${inactive.length}</b></div></div><h2>Chavrusa Review Queue</h2><p class=muted>Identity/reference information and approval controls are internal and are not shown on parent match cards.</p><div class=list>${
+    `<div class="w dash"><div class=row><div><div class=muted>ADMIN DASHBOARD</div><h1>MyChavrusa Control Center</h1></div><span class=badge>Internal only</span></div><div class=stats><button class=stat data-jump=reviews>Chavrusas<b>${cps?.length || 0}</b></button><button class=stat data-jump=requests>Parent Requests<b>${active.length}</b></button><button class=stat data-jump=connections>Connections<b>${cs?.length || 0}</b></button><button class=stat data-jump=reviews>Needs Attention<b>${inactive.length}</b></button></div><h2 id=reviews>Chavrusa Review Queue</h2><p class=muted>Identity/reference information and approval controls are internal and are not shown on parent match cards.</p><div class=list>${
       inactive
         .slice(0, 20)
         .map((x) => {
           let q = pm[x.id] || {};
           const ref = refsByChavrusa[x.id];
-          return `<div class=item><div class=row><div><b>${E(q.first_name || "")} ${E(q.last_name || "")}</b><div class=muted>${E(F(x.chavrusa_type))} • ${E(x.location || "")} • ${E(F(x.visibility))}</div><div class=privacy>Identity: ${E(F(x.identity_status))} • Reference: ${E(F(x.reference_status))}</div>${ref ? `<div class="internal-detail"><b>Private reference:</b> ${E(ref.full_name)}${ref.relationship ? ` — ${E(ref.relationship)}` : ""}<br>${E(ref.phone)}${ref.email ? ` • ${E(ref.email)}` : ""}</div>` : '<div class="msg err">No reference information was submitted.</div>'}</div><div>${x.identity_status !== "verified" ? `<button class=btn data-idv="${x.id}" data-ref="${x.reference_status}">ID Verified</button>` : ""} ${x.reference_status !== "checked" ? `<button class=btn data-refv="${x.id}" data-identity="${x.identity_status}" ${ref ? "" : "disabled"}>Reference Checked</button>` : ""} ${x.identity_status === "verified" && x.reference_status === "checked" ? `<button class="btn primary" data-activate="${x.id}">Approve & Activate</button>` : "<span class=badge>Complete checks first</span>"}</div></div></div>`;
+          return `<div class=item><div class=row><div><b>${E(q.first_name || "")} ${E(q.last_name || "")}</b><div class=muted>${E(F(x.chavrusa_type))} • ${E(x.location || "")} • ${E(F(x.visibility))}</div><div class=privacy>Identity: ${E(F(x.identity_status))} • Reference: ${E(F(x.reference_status))}</div>${ref ? `<div class="internal-detail"><b>Private reference:</b> ${E(ref.full_name)}${ref.position_title ? ` • ${E(ref.position_title)}` : ""}${ref.organization ? ` • ${E(ref.organization)}` : ""}${ref.relationship ? ` — ${E(ref.relationship)}` : ""}<br>${E(ref.phone)}${ref.email ? ` • ${E(ref.email)}` : ""}</div>` : '<div class="msg err">No reference information was submitted.</div>'}</div><div>${x.identity_status !== "verified" ? `<button class=btn data-idv="${x.id}" data-ref="${x.reference_status}">ID Verified</button>` : ""} ${x.reference_status !== "checked" ? `<button class=btn data-refv="${x.id}" data-identity="${x.identity_status}" ${ref ? "" : "disabled"}>Reference Checked</button>` : ""} ${x.identity_status === "verified" && x.reference_status === "checked" ? `<button class="btn primary" data-activate="${x.id}">Approve & Activate</button>` : "<span class=badge>Complete checks first</span>"}</div></div></div>`;
         })
         .join("") || "<div class=item>No profiles waiting for approval.</div>"
     }</div><h2>Pending Verification</h2><div class=list>${
@@ -598,17 +608,18 @@ async function admin(p) {
           return `<div class=item><b>${E(q.first_name || "")} ${E(q.last_name || "")}</b><div class=muted>${E(F(x.chavrusa_type))} • ${E(x.location || "")} • ${E((x.languages || []).join(", "))}</div></div>`;
         })
         .join("") || "<div class=item>No private profiles right now.</div>"
-    }</div><h2>Recent Requests</h2><div class=list>${
+    }</div><h2 id=requests>Parent Requests</h2><div class=list>${
       (rs || [])
         .slice(0, 12)
         .map((x) => {
           let b = bm[x.bochur_id] || {},
             q = pm[x.parent_id] || {};
-          return `<div class=item><div class=row><div><b>${E(b.first_name || "Bochur")}${b.age ? " • Age " + E(b.age) : ""}</b><div class=muted>${E(x.purpose || "")} • ${E(F(x.learning_mode))} • ${E(x.location || "")}</div><div class=privacy>Parent: ${E(q.first_name || "")} ${E(q.last_name || "")}</div></div><span class=badge>${E(F(x.status))}</span></div></div>`;
+          return `<div class=item><div class=row><div><b>${E(b.first_name || "Bochur")} ${E(b.last_name || "")}${b.age ? " • Age " + E(b.age) : ""}</b><div class=muted>${E(x.purpose || "")} • ${E(F(x.learning_mode))} • ${E(x.location || "")}</div><div class=privacy>Shiur: ${E(b.shiur_year || "Not listed")} • Parent: ${E(q.first_name || "")} ${E(q.last_name || "")}</div></div><div><span class=badge>${E(F(x.status))}</span> <span class="badge urgent">${E(F(x.urgency))} • Admin only</span></div></div></div>`;
         })
         .join("") || "<div class=item>No requests yet.</div>"
-    }</div></div>`;
+    }</div><h2 id=connections>Connections</h2><div class=list>${(cs || []).map(x=>`<div class=item><div class=row><div><b>${E(F(x.status))}</b><div class=muted>Updated ${E(new Date(x.updated_at).toLocaleDateString())}</div></div><span class=badge>${E(F(x.status))}</span></div></div>`).join("") || "<div class=item>No connections yet.</div>"}</div></div>`;
   wire(true);
+  document.querySelectorAll("[data-jump]").forEach((b) => b.onclick=()=>document.getElementById(b.dataset.jump)?.scrollIntoView({behavior:"smooth"}));
   document.querySelectorAll("[data-idv]").forEach(
     (b) =>
       (b.onclick = async () => {
